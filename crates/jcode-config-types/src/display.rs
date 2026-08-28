@@ -136,7 +136,11 @@ impl Default for DisplayConfig {
             pin_todos: true,
             queue_mode: false,
             auto_server_reload: true,
-            mouse_capture: true,
+            // Browser-backed terminals such as code-server can neither select text
+            // nor consume OSC 52 clipboard writes while mouse reporting is active.
+            // Keep native selection available by default; users can opt in to wheel
+            // scrolling in terminals that support the full mouse/clipboard path.
+            mouse_capture: false,
             debug_socket: false,
             emoji: true,
             centered: false,

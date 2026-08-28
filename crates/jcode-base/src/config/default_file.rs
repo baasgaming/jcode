@@ -147,11 +147,11 @@ queue_mode = false
 # Automatically reload the remote server when a newer server binary is detected (default: true)
 auto_server_reload = true
 
-# Capture mouse events (enables scroll wheel). To copy while mouse capture is on,
-# press Alt+Y, drag across Jcode text, then release to copy. Esc exits copy mode.
-# Set this to false for native terminal selection when OSC 52 clipboard writes
-# are not supported; use Alt+U / Alt+D to page through Jcode history instead.
-mouse_capture = true
+# Capture mouse events (enables scroll wheel). Keep this false for native terminal
+# selection in browser-backed terminals where OSC 52 clipboard writes are unsupported.
+# Use Alt+U / Alt+D to page through Jcode history, or set true in terminals that
+# support mouse capture and clipboard integration.
+mouse_capture = false
 
 # Enable debug socket for external control/testing (default: false)
 debug_socket = false
