@@ -159,7 +159,9 @@ pub(crate) fn reapply_terminal_modes_to(
     focus_change: bool,
 ) -> std::io::Result<()> {
     use crossterm::QueueableCommand;
-    use crossterm::event::{EnableBracketedPaste, EnableFocusChange, EnableMouseCapture};
+    use crossterm::event::{
+        DisableMouseCapture, EnableBracketedPaste, EnableFocusChange, EnableMouseCapture,
+    };
 
     writer.queue(EnableBracketedPaste)?;
     if focus_change {
@@ -170,7 +172,14 @@ pub(crate) fn reapply_terminal_modes_to(
         // Crossterm toggles Win32 console mouse input on Windows, but ConPTY
         // hosts such as VS Code also need the VT tracking modes reasserted.
         #[cfg(windows)]
-        writer.write_all(b"\x1b[?1000h\x1b[?1002h\x1b[?1003h\x1b[?1015h\x1b[?1006h")?;
+        {
+            writer.write_all(b"\x1b[?1000h\x1b[?1002h\x1b[?1003h\x1b[?1015h\x1b[?1006h")?;
+        }
+    } else {
+        // A configuration reload can change this while an old client still has
+        // xterm mouse reporting enabled. Omitting EnableMouseCapture is not enough:
+        // explicitly release it so browser scrolling and native selection return.
+        writer.queue(DisableMouseCapture)?;
     }
     if keyboard_enhanced {
         write!(writer, "\x1b[={}u", keyboard_enhancement_flags().bits())?;
@@ -201,6 +210,7 @@ mod terminal_mode_tests {
 
         let output = String::from_utf8(output).unwrap();
         assert!(output.starts_with("\x1b[?2004h\x1b[?1004h"));
+        assert!(output.contains("\x1b[?1000l"));
         assert!(!output.contains("\x1b[?1000h"));
         assert!(output.contains("\x1b[="));
     }
