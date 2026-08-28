@@ -149,7 +149,8 @@ auto_server_reload = true
 
 # Capture mouse events (enables scroll wheel). To copy while mouse capture is on,
 # press Alt+Y, drag across Jcode text, then release to copy. Esc exits copy mode.
-# This works when terminals reserve mouse input for Jcode.
+# Set this to false for native terminal selection when OSC 52 clipboard writes
+# are not supported; use Alt+U / Alt+D to page through Jcode history instead.
 mouse_capture = true
 
 # Enable debug socket for external control/testing (default: false)
