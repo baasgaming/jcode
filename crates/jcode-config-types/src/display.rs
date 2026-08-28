@@ -20,7 +20,7 @@ pub struct DisplayConfig {
     pub queue_mode: bool,
     /// Automatically reload the remote server when a newer server binary is detected (default: true)
     pub auto_server_reload: bool,
-    /// Capture mouse events (default: true). Enables scroll wheel but disables terminal selection.
+    /// Capture mouse events (default: false). Enables scroll wheel but disables terminal selection.
     pub mouse_capture: bool,
     /// Enable debug socket for external control (default: false)
     pub debug_socket: bool,
