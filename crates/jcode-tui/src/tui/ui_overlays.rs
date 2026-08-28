@@ -466,6 +466,10 @@ pub(super) fn draw_help_overlay(frame: &mut Frame, area: Rect, scroll: usize, ap
         "Scroll history down / up one line",
     ));
     lines.push(key_entry(
+        "Shift+drag",
+        "Select and copy text while mouse-wheel scrolling stays enabled",
+    ));
+    lines.push(key_entry(
         "Cmd/Super+K / J",
         "Jump to previous / next user prompt (macOS, if forwarded)",
     ));

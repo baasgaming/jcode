@@ -147,7 +147,9 @@ queue_mode = false
 # Automatically reload the remote server when a newer server binary is detected (default: true)
 auto_server_reload = true
 
-# Capture mouse events (enables scroll wheel; disables terminal text selection)
+# Capture mouse events (enables scroll wheel). Hold Shift while dragging to use
+# the terminal's native text selection and copy behavior. Alt+Y opens Jcode's
+# in-app selection mode when the terminal does not provide native selection.
 mouse_capture = true
 
 # Enable debug socket for external control/testing (default: false)
