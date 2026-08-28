@@ -147,10 +147,9 @@ queue_mode = false
 # Automatically reload the remote server when a newer server binary is detected (default: true)
 auto_server_reload = true
 
-# Capture mouse events (enables scroll wheel). Keep this false for native terminal
-# selection in browser-backed terminals where OSC 52 clipboard writes are unsupported.
-# In code-server, press Alt+Y to select and copy natively, then Alt+Y or Esc to resume scrolling.
-mouse_capture = true
+# Let the terminal handle normal wheel scrolling and native text selection. This keeps
+# browser-backed terminals such as code-server compatible with copy-on-selection.
+mouse_capture = false
 
 # Enable debug socket for external control/testing (default: false)
 debug_socket = false
