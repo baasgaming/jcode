@@ -602,15 +602,27 @@ fn signal_crash_reason(sig: i32) -> String {
 }
 
 #[cfg(unix)]
+fn restore_terminal_after_signal(writer: &mut impl Write) {
+    // A signal bypasses `TuiRuntimeGuard::finish`, so restore every private
+    // terminal mode explicitly before returning to the primary screen. This
+    // keeps mouse selection usable after an interrupted Jcode session.
+    let _ = crossterm::execute!(
+        writer,
+        crossterm::event::DisableBracketedPaste,
+        crossterm::event::DisableFocusChange,
+        crossterm::event::DisableMouseCapture,
+        crossterm::event::PopKeyboardEnhancementFlags,
+        crossterm::terminal::LeaveAlternateScreen,
+        crossterm::cursor::Show,
+    );
+}
+
+#[cfg(unix)]
 fn handle_termination_signal(sig: i32) -> ! {
     mark_current_session_crashed(signal_crash_reason(sig));
 
     let _ = crossterm::terminal::disable_raw_mode();
-    let _ = crossterm::execute!(
-        std::io::stderr(),
-        crossterm::terminal::LeaveAlternateScreen,
-        crossterm::cursor::Show
-    );
+    restore_terminal_after_signal(&mut std::io::stderr());
 
     if let Some(session_id) = get_current_session() {
         print_session_resume_hint(&session_id);
@@ -693,6 +705,30 @@ mod tests {
                 "disable sequence must turn off VT mouse mode {mode}"
             );
         }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn signal_cleanup_disables_mouse_capture_before_leaving_alternate_screen() {
+        let mut output = Vec::new();
+        restore_terminal_after_signal(&mut output);
+
+        let output = String::from_utf8(output).expect("terminal sequences are UTF-8");
+        for sequence in ["\x1b[?2004l", "\x1b[?1004l", "\x1b[?1000l", "\x1b[?1006l"] {
+            assert!(
+                output.contains(sequence),
+                "signal cleanup must emit {sequence:?}: {output:?}"
+            );
+        }
+
+        let mouse_disabled = output.find("\x1b[?1000l").expect("mouse mode disabled");
+        let primary_screen = output
+            .find("\x1b[?1049l")
+            .expect("alternate screen exited");
+        assert!(
+            mouse_disabled < primary_screen,
+            "mouse capture must be disabled before showing the primary screen: {output:?}"
+        );
     }
 
     #[test]
