@@ -641,9 +641,9 @@ fn test_fast_flick_enqueues_more_lines_than_a_slow_notch() {
     let slow =
         App::scroll_intent_lines(App::scroll_acceleration_multiplier(Duration::from_millis(400)));
     assert!(fast > slow, "a fast flick commits more lines than a slow notch ({fast} > {slow})");
-    assert_eq!(slow, 3, "a deliberate notch uses the base intent");
+    assert_eq!(slow, 8, "a deliberate notch uses the base intent");
     // Even a maximum-velocity multiplier stays within the controllable cap.
-    assert!(App::scroll_intent_lines(8) <= 5, "intent is capped");
+    assert!(App::scroll_intent_lines(8) <= 16, "intent is capped");
 }
 
 #[test]

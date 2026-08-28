@@ -70,14 +70,14 @@ fn is_mouse_scroll_kind(kind: MouseEventKind) -> bool {
 }
 
 impl App {
-    const MOUSE_SCROLL_INTENT_LINES: i16 = 3;
+    const MOUSE_SCROLL_INTENT_LINES: i16 = 8;
     /// Upper bound on lines enqueued per wheel notch after velocity
-    /// acceleration. Kept close to the base intent so the boost is only a subtle
-    /// nudge on fast flicks rather than a large jump.
-    const MOUSE_SCROLL_MAX_INTENT_LINES: i16 = 5;
+    /// acceleration. A fast browser wheel gesture must visibly cover more than
+    /// one text row, without allowing a runaway queue.
+    const MOUSE_SCROLL_MAX_INTENT_LINES: i16 = 16;
     /// Maximum accumulated scroll momentum. Slightly above the original so a fast
     /// flick still glides a touch, without long runaway momentum.
-    const MOUSE_SCROLL_MAX_QUEUE: i16 = 30;
+    const MOUSE_SCROLL_MAX_QUEUE: i16 = 64;
     /// How long the overscroll status line stays revealed after the last
     /// downward overscroll tick before it rebounds away. Long enough that the
     /// depleting countdown indicator is perceivable and the line reads as a
