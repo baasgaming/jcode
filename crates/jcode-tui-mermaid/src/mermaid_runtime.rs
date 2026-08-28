@@ -128,10 +128,24 @@ pub(super) fn infer_protocol_from_env(
     term_program: Option<&str>,
     lc_terminal: Option<&str>,
     kitty_window_id: Option<&str>,
+    vscode_image_protocol: Option<&str>,
 ) -> Option<ProtocolType> {
     let term = term.unwrap_or("").to_ascii_lowercase();
     let term_program = term_program.unwrap_or("").to_ascii_lowercase();
     let lc_terminal = lc_terminal.unwrap_or("").to_ascii_lowercase();
+    let vscode_image_protocol = vscode_image_protocol
+        .unwrap_or("")
+        .trim()
+        .to_ascii_lowercase();
+
+    // A browser-hosted VS Code terminal must explicitly opt in after its image
+    // addon has been enabled. Do not infer graphics support merely from
+    // TERM_PROGRAM=vscode because most installations leave that addon off.
+    match vscode_image_protocol.as_str() {
+        "iterm2" | "iterm" => return Some(ProtocolType::Iterm2),
+        "sixel" => return Some(ProtocolType::Sixel),
+        _ => {}
+    }
 
     // WezTerm advertises several image protocols, but ratatui-image's Kitty
     // path relies on Unicode placeholders that WezTerm does not implement
@@ -240,6 +254,7 @@ fn fast_picker() -> Picker {
         std::env::var("TERM_PROGRAM").ok().as_deref(),
         std::env::var("LC_TERMINAL").ok().as_deref(),
         std::env::var("KITTY_WINDOW_ID").ok().as_deref(),
+        std::env::var("JCODE_VSCODE_IMAGE_PROTOCOL").ok().as_deref(),
     ) {
         picker.set_protocol_type(protocol);
     }
@@ -317,6 +332,7 @@ pub fn init_picker() {
             std::env::var("TERM_PROGRAM").ok().as_deref(),
             std::env::var("LC_TERMINAL").ok().as_deref(),
             std::env::var("KITTY_WINDOW_ID").ok().as_deref(),
+            std::env::var("JCODE_VSCODE_IMAGE_PROTOCOL").ok().as_deref(),
         );
         let multiplexer = detect_multiplexer_from_env();
         let probe_override = std::env::var("JCODE_MERMAID_PICKER_PROBE")
@@ -687,20 +703,20 @@ mod tests {
     #[test]
     fn infer_protocol_detects_kitty_family() {
         assert_eq!(
-            infer_protocol_from_env(Some("xterm-kitty"), None, None, None),
+            infer_protocol_from_env(Some("xterm-kitty"), None, None, None, None),
             Some(ProtocolType::Kitty)
         );
         assert_eq!(
-            infer_protocol_from_env(None, Some("ghostty"), None, None),
+            infer_protocol_from_env(None, Some("ghostty"), None, None, None),
             Some(ProtocolType::Kitty)
         );
         assert_eq!(
-            infer_protocol_from_env(None, Some("HandTerm"), None, None),
+            infer_protocol_from_env(None, Some("HandTerm"), None, None, None),
             Some(ProtocolType::Kitty)
         );
         // KITTY_WINDOW_ID present is sufficient.
         assert_eq!(
-            infer_protocol_from_env(Some("xterm-256color"), None, None, Some("3")),
+            infer_protocol_from_env(Some("xterm-256color"), None, None, Some("3"), None),
             Some(ProtocolType::Kitty)
         );
     }
@@ -709,15 +725,15 @@ mod tests {
     fn infer_protocol_detects_iterm_and_sixel() {
         // Real iTerm2 breaks on inline images, so it reports no protocol.
         assert_eq!(
-            infer_protocol_from_env(None, Some("iTerm.app"), None, None),
+            infer_protocol_from_env(None, Some("iTerm.app"), None, None, None),
             None
         );
         assert_eq!(
-            infer_protocol_from_env(None, Some("WezTerm"), None, None),
+            infer_protocol_from_env(None, Some("WezTerm"), None, None, None),
             Some(ProtocolType::Iterm2)
         );
         assert_eq!(
-            infer_protocol_from_env(Some("xterm-sixel"), None, None, None),
+            infer_protocol_from_env(Some("xterm-sixel"), None, None, None, None),
             Some(ProtocolType::Sixel)
         );
     }
@@ -729,16 +745,45 @@ mod tests {
                 Some("xterm-kitty"),
                 Some("WezTerm"),
                 None,
-                Some("stale-kitty-window")
+                Some("stale-kitty-window"),
+                None,
             ),
             Some(ProtocolType::Iterm2)
         );
         assert_eq!(
-            infer_protocol_from_env(Some("foot"), Some("foot"), None, None),
+            infer_protocol_from_env(Some("foot"), Some("foot"), None, None, None),
             None
         );
         assert_eq!(
-            infer_protocol_from_env(Some("xterm-256color"), Some("konsole"), None, None),
+            infer_protocol_from_env(Some("xterm-256color"), Some("konsole"), None, None, None),
+            None
+        );
+    }
+
+    #[test]
+    fn infer_protocol_uses_explicit_vscode_image_opt_in() {
+        assert_eq!(
+            infer_protocol_from_env(
+                Some("xterm-256color"),
+                Some("vscode"),
+                None,
+                None,
+                Some("iterm2")
+            ),
+            Some(ProtocolType::Iterm2)
+        );
+        assert_eq!(
+            infer_protocol_from_env(
+                Some("xterm-256color"),
+                Some("vscode"),
+                None,
+                None,
+                Some("sixel")
+            ),
+            Some(ProtocolType::Sixel)
+        );
+        assert_eq!(
+            infer_protocol_from_env(Some("xterm-256color"), Some("vscode"), None, None, None),
             None
         );
     }
@@ -747,7 +792,7 @@ mod tests {
     fn infer_protocol_misses_inside_masking_multiplexer() {
         // Herdr/tmux advertise a bland TERM with no graphics hints.
         assert_eq!(
-            infer_protocol_from_env(Some("xterm-256color"), None, None, None),
+            infer_protocol_from_env(Some("xterm-256color"), None, None, None, None),
             None
         );
     }

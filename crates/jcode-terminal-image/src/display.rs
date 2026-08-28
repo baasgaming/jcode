@@ -35,6 +35,12 @@ pub enum ImageProtocol {
 impl ImageProtocol {
     /// Detect the best available image protocol for the current terminal
     pub fn detect() -> Self {
+        if let Some(protocol) =
+            vscode_image_protocol(std::env::var("JCODE_VSCODE_IMAGE_PROTOCOL").ok().as_deref())
+        {
+            return protocol;
+        }
+
         // Check for Kitty first (most capable)
         if std::env::var("KITTY_WINDOW_ID").is_ok() {
             return Self::Kitty;
@@ -149,6 +155,24 @@ fn iterm2_protocol() -> ImageProtocol {
         ImageProtocol::ITerm2
     } else {
         ImageProtocol::None
+    }
+}
+
+/// Parse the explicit code-server / VS Code terminal image-protocol opt-in.
+///
+/// Browser-hosted xterm does not advertise image support through TERM. Jcode
+/// therefore never assumes it. The image addon must be enabled separately in
+/// the host and this variable chooses a protocol it actually supports.
+fn vscode_image_protocol(value: Option<&str>) -> Option<ImageProtocol> {
+    match value
+        .unwrap_or_default()
+        .trim()
+        .to_ascii_lowercase()
+        .as_str()
+    {
+        "iterm2" | "iterm" => Some(ImageProtocol::ITerm2),
+        "sixel" => Some(ImageProtocol::Sixel),
+        _ => None,
     }
 }
 
@@ -484,6 +508,21 @@ fn display_sixel(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn explicit_vscode_image_protocol_is_opt_in_only() {
+        assert_eq!(vscode_image_protocol(None), None);
+        assert_eq!(vscode_image_protocol(Some("")), None);
+        assert_eq!(vscode_image_protocol(Some("unknown")), None);
+        assert_eq!(
+            vscode_image_protocol(Some("iTerm2")),
+            Some(ImageProtocol::ITerm2)
+        );
+        assert_eq!(
+            vscode_image_protocol(Some("sixel")),
+            Some(ImageProtocol::Sixel)
+        );
+    }
 
     #[test]
     fn test_protocol_detection() {

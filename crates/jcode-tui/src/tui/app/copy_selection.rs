@@ -2,8 +2,50 @@ use super::App;
 use crossterm::event::{KeyCode, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
+/// True only for the browser terminal that is known to reject OSC 52 writes.
+/// Disabling mouse reporting briefly lets xterm perform its native drag-to-copy
+/// workflow while preserving mouse-wheel scrolling everywhere else.
+fn use_browser_native_copy_fallback(term_program: Option<&str>) -> bool {
+    term_program
+        .unwrap_or_default()
+        .trim()
+        .eq_ignore_ascii_case("vscode")
+}
+
+#[cfg(test)]
+mod browser_native_copy_tests {
+    use super::use_browser_native_copy_fallback;
+
+    #[test]
+    fn native_copy_fallback_is_limited_to_vscode_browser_terminals() {
+        assert!(use_browser_native_copy_fallback(Some("vscode")));
+        assert!(use_browser_native_copy_fallback(Some("VSCode")));
+        assert!(!use_browser_native_copy_fallback(Some("xterm-256color")));
+        assert!(!use_browser_native_copy_fallback(None));
+    }
+}
+
 impl App {
     const COPY_VIEWPORT_CONTEXT_LINES: usize = 4;
+
+    fn set_browser_native_copy_fallback(&mut self, enabled: bool) {
+        if !use_browser_native_copy_fallback(std::env::var("TERM_PROGRAM").ok().as_deref()) {
+            return;
+        }
+
+        if enabled {
+            // code-server's xterm does not expose Jcode's OSC 52 clipboard
+            // writes to the browser. Turn off reporting only while selecting,
+            // so xterm can make a real browser selection and copy it.
+            let _ = crossterm::execute!(std::io::stdout(), crossterm::event::DisableMouseCapture);
+            self.set_status_notice(
+                "Native copy: drag to select (copied automatically), Alt+Y or Esc resumes scroll",
+            );
+        } else if crate::perf::tui_policy().enable_mouse_capture {
+            let _ = crossterm::execute!(std::io::stdout(), crossterm::event::EnableMouseCapture);
+            self.set_status_notice("Mouse scrolling resumed");
+        }
+    }
 
     pub(super) fn enter_copy_selection_mode(&mut self) {
         self.copy_selection_mode = true;
@@ -11,6 +53,7 @@ impl App {
         self.copy_selection_pending_anchor = None;
         self.diff_pane_focus = false;
         self.diagram_focus = false;
+        self.set_browser_native_copy_fallback(true);
     }
 
     pub(super) fn exit_copy_selection_mode(&mut self) {
@@ -20,6 +63,7 @@ impl App {
         self.copy_selection_anchor = None;
         self.copy_selection_cursor = None;
         self.copy_selection_goal_column = None;
+        self.set_browser_native_copy_fallback(false);
     }
 
     pub(super) fn toggle_copy_selection_mode(&mut self) {

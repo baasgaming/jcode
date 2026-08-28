@@ -149,9 +149,8 @@ auto_server_reload = true
 
 # Capture mouse events (enables scroll wheel). Keep this false for native terminal
 # selection in browser-backed terminals where OSC 52 clipboard writes are unsupported.
-# Use Alt+U / Alt+D to page through Jcode history, or set true in terminals that
-# support mouse capture and clipboard integration.
-mouse_capture = false
+# In code-server, press Alt+Y to select and copy natively, then Alt+Y or Esc to resume scrolling.
+mouse_capture = true
 
 # Enable debug socket for external control/testing (default: false)
 debug_socket = false

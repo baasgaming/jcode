@@ -140,7 +140,7 @@ impl Default for DisplayConfig {
             // nor consume OSC 52 clipboard writes while mouse reporting is active.
             // Keep native selection available by default; users can opt in to wheel
             // scrolling in terminals that support the full mouse/clipboard path.
-            mouse_capture: false,
+            mouse_capture: true,
             debug_socket: false,
             emoji: true,
             centered: false,
