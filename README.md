@@ -302,7 +302,7 @@ Jcode can render at over a thousand fps. Your monitor will not have the refresh 
 
 The custom scrollback implementation of jcode allows it to do much more than a native scrollback. However, it is a terminal-level limitation that I cannot have smooth, partial line scrolling with a custom scrollback. To fix this, I made my own terminal. Handterm https://github.com/1jehuang/handterm implements a native scroll api, and also happens to be very efficient. This is a work in progress. Scrolling is still well implemented for normal terminals.
 
-When `display.mouse_capture = true`, the mouse wheel scrolls Jcode's chat history. In terminals based on xterm.js, including VS Code's integrated terminal, hold **Shift** while dragging to force the terminal's native text selection. With `terminal.integrated.copyOnSelection` enabled, releasing the selection copies it as usual. Press `Alt+Y` for Jcode's in-app selection mode when native terminal selection is unavailable.
+When `display.mouse_capture = true`, the mouse wheel scrolls Jcode's chat history. To copy from Jcode, press `Alt+Y` to enter its copy mode, drag across the text, then release the mouse button to copy. Press `Esc` to leave copy mode. This works even when xterm.js terminals, including VS Code's integrated terminal, reserve mouse input for Jcode.
 
 Jcode is left-aligned by default. You can switch to centered mode with the `Alt+C` hotkey, with the `/alignment` command, or in the config.
 
